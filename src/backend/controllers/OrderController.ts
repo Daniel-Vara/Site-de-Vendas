@@ -9,10 +9,14 @@ export const OrderController = {
         .select('*, itens:ItemPedido(*, produto:Produto(*))')
         .order('createdAt', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro Supabase ao buscar pedidos:', error);
+        return res.status(400).json({ error: error.message, details: error.details });
+      }
       res.json(data);
     } catch (error) {
-      res.status(500).json({ error: 'Erro ao buscar pedidos' });
+      console.error('Erro inesperado ao buscar pedidos:', error);
+      res.status(500).json({ error: 'Erro interno ao buscar pedidos' });
     }
   },
 

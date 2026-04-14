@@ -112,9 +112,11 @@ ON CONFLICT (nome) DO NOTHING;`;
         
         <ol className="list-decimal list-inside text-sm text-gray-500 space-y-1 ml-2">
           <li>Acesse o seu projeto no <a href="https://supabase.com/dashboard" target="_blank" className="text-blue-600 underline">Dashboard do Supabase</a></li>
-          <li>No menu lateral, clique em <b>SQL Editor</b></li>
-          <li>Clique em <b>New Query</b></li>
-          <li>Cole o código abaixo e clique em <b>Run</b></li>
+          <li>No menu lateral, clique em <b>SQL Editor</b>, crie uma <b>New Query</b>, cole o código abaixo e clique em <b>Run</b></li>
+          <li>No menu lateral, clique em <b>Storage</b></li>
+          <li>Clique em <b>New Bucket</b> e crie um bucket chamado <b>marketplace</b></li>
+          <li><b>IMPORTANTE:</b> Marque o bucket como <b>Public</b> para que as imagens fiquem visíveis</li>
+          <li><b>POLÍTICAS DE ACESSO (RLS):</b> Se você não conseguir deletar ou criar produtos, vá em <b>Authentication -&gt; Policies</b> e desabilite o RLS para as tabelas ou adicione políticas de <b>Full Access</b> para usuários anônimos (apenas para testes).</li>
         </ol>
 
         <div className="relative group">

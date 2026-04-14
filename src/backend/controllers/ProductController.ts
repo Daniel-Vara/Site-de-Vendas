@@ -141,15 +141,56 @@ export const ProductController = {
   async delete(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const { error } = await supabase
+      
+      console.log('--- INICIANDO EXCLUSÃO AGRESSIVA ---');
+      console.log('ID alvo:', id);
+
+      // 1. Verificar se o produto existe antes de tudo
+      const { data: existingProduct, error: findError } = await supabase
+        .from('Produto')
+        .select('id, nome')
+        .eq('id', id)
+        .single();
+
+      if (findError || !existingProduct) {
+        console.error('Produto não encontrado para exclusão:', findError);
+        return res.status(404).json({ error: 'Produto não encontrado no banco de dados.' });
+      }
+
+      console.log('Produto encontrado:', existingProduct.nome);
+
+      // 2. Limpar dependências (Avaliações e Itens de Pedido)
+      console.log('Limpando dependências...');
+      
+      const [delReviews, delItems] = await Promise.all([
+        supabase.from('Avaliacao').delete().eq('produtoId', id),
+        supabase.from('ItemPedido').delete().eq('produtoId', id)
+      ]);
+
+      if (delReviews.error) console.warn('Erro ao deletar avaliações:', delReviews.error.message);
+      if (delItems.error) console.warn('Erro ao deletar itens de pedido:', delItems.error.message);
+
+      // 3. Deletar o produto final
+      console.log('Executando delete final na tabela Produto...');
+      const { error: delError, status } = await supabase
         .from('Produto')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
-      res.status(204).send();
+      if (delError) {
+        console.error('Erro fatal do Supabase ao deletar produto:', delError);
+        return res.status(400).json({ 
+          error: 'O Supabase recusou a exclusão do produto.', 
+          details: delError.message,
+          code: delError.code
+        });
+      }
+
+      console.log('Sucesso! Status Supabase:', status);
+      res.json({ message: 'Produto e todo o seu histórico foram removidos com sucesso.' });
     } catch (error) {
-      res.status(500).json({ error: 'Erro ao excluir produto' });
+      console.error('Erro catastrófico no controller de exclusão:', error);
+      res.status(500).json({ error: 'Erro interno ao processar a exclusão total.' });
     }
   },
 };

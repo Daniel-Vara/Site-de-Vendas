@@ -24,8 +24,11 @@ export default function AdminOrders() {
     try {
       const res = await api.get('/orders');
       setOrders(res.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao buscar pedidos', error);
+      const message = error.response?.data?.error || error.message;
+      const details = error.response?.data?.details || '';
+      alert(`Erro ao buscar pedidos: ${message}\n${details}`);
     } finally {
       setLoading(false);
     }

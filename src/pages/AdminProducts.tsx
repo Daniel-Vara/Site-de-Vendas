@@ -40,8 +40,8 @@ export default function AdminProducts() {
         api.get('/products', { params: { limit: 100 } }),
         api.get('/categories')
       ]);
-      setProducts(prodRes.data.data);
-      setCategories(catRes.data);
+      setProducts(prodRes.data.data || []);
+      setCategories(catRes.data || []);
     } catch (error) {
       console.error('Erro ao buscar dados', error);
     } finally {
@@ -49,17 +49,40 @@ export default function AdminProducts() {
     }
   };
 
+  const [uploading, setUploading] = useState(false);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const formDataUpload = new FormData();
+    formDataUpload.append('image', file);
+
+    try {
+      const res = await api.post('/upload', formDataUpload, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setFormData({ ...formData, imagemUrl: res.data.url });
+    } catch (error: any) {
+      console.error('Erro no upload:', error);
+      alert('Erro ao fazer upload da imagem. Verifique se o bucket "marketplace" existe e é público no Supabase.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleOpenModal = (product: any = null) => {
     if (product) {
       setEditingProduct(product);
       setFormData({
-        nome: product.nome,
-        descricao: product.descricao,
-        preco: product.preco.toString(),
-        estoque: product.estoque.toString(),
+        nome: product.nome || '',
+        descricao: product.descricao || '',
+        preco: (product.preco || 0).toString(),
+        estoque: (product.estoque || 0).toString(),
         imagemUrl: product.imagemUrl || '',
-        vendedor: product.vendedor,
-        categoriaId: product.categoriaId
+        vendedor: product.vendedor || '',
+        categoriaId: product.categoriaId || ''
       });
     } else {
       setEditingProduct(null);
@@ -95,12 +118,19 @@ export default function AdminProducts() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este produto?')) return;
+    if (!window.confirm('Tem certeza que deseja excluir este produto?')) return;
     try {
-      await api.delete(`/products/${id}`);
+      console.log('Solicitando exclusão do produto:', id);
+      const res = await api.delete(`/products/${id}`);
+      console.log('Resposta da exclusão:', res.status);
+      
+      alert('Produto excluído com sucesso!');
       fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao excluir produto', error);
+      const errorMsg = error.response?.data?.error || error.message;
+      const details = error.response?.data?.details || '';
+      alert(`Erro ao excluir produto: ${errorMsg}\n${details}`);
     }
   };
 
@@ -282,14 +312,42 @@ export default function AdminProducts() {
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-bold mb-2">URL da Imagem</label>
-                    <input 
-                      type="url"
-                      className="w-full px-4 py-3 rounded-2xl border border-gray-200 outline-none focus:border-blue-500 transition-colors"
-                      placeholder="https://exemplo.com/imagem.jpg"
-                      value={formData.imagemUrl}
-                      onChange={(e) => setFormData({...formData, imagemUrl: e.target.value})}
-                    />
+                    <label className="block text-sm font-bold mb-2">Imagem do Produto</label>
+                    <div className="flex flex-col gap-4">
+                      <div className="flex gap-4 items-center">
+                        <div className="w-24 h-24 bg-gray-100 rounded-2xl overflow-hidden flex-shrink-0 border border-gray-200">
+                          {formData.imagemUrl ? (
+                            <img src={formData.imagemUrl} alt="Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-300"><ImageIcon size={32} /></div>
+                          )}
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <label className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border-2 border-dashed border-gray-200 cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-all ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                            <Plus size={20} className="text-blue-500" />
+                            <span className="text-sm font-bold text-gray-600">{uploading ? 'Enviando...' : 'Fazer Upload de Imagem'}</span>
+                            <input 
+                              type="file" 
+                              className="hidden" 
+                              accept="image/*"
+                              onChange={handleImageUpload}
+                              disabled={uploading}
+                            />
+                          </label>
+                          <p className="text-[10px] text-gray-400">Formatos aceitos: JPG, PNG, WEBP. Tamanho máx: 5MB.</p>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-gray-400 mb-1 uppercase tracking-wider">Ou cole a URL da imagem</label>
+                        <input 
+                          type="url"
+                          className="w-full px-4 py-3 rounded-2xl border border-gray-200 outline-none focus:border-blue-500 transition-colors text-sm"
+                          placeholder="https://exemplo.com/imagem.jpg"
+                          value={formData.imagemUrl}
+                          onChange={(e) => setFormData({...formData, imagemUrl: e.target.value})}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
                 

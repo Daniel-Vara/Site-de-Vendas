@@ -1,10 +1,21 @@
 import { Router } from 'express';
+import multer from 'multer';
 import { ProductController } from '../controllers/ProductController';
 import { CategoryController } from '../controllers/CategoryController';
 import { OrderController } from '../controllers/OrderController';
 import { ReviewController } from '../controllers/ReviewController';
+import { UploadController } from '../controllers/UploadController';
 
 const router = Router();
+const upload = multer({ storage: multer.memoryStorage() });
+
+/**
+ * @openapi
+ * /upload:
+ *   post:
+ *     summary: Faz upload de uma imagem para o Supabase Storage
+ */
+router.post('/upload', upload.single('image'), UploadController.upload);
 
 /**
  * @openapi
